@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"extensions": {
+		"recommendations": [
+			"Gruntfuggly.todo-tree",
+			"sirquini.maude"
+		]
+	},
+	"settings": {
+		"cSpell.words": [
+			"contactless",
+			"endfm",
+			"fmod",
+			"subsorts"
+		],
+		"todo-tree.regex.regex": "((//|#|<!--|---|;|/\\*|^)\\s*($TAGS)|^\\s*- \\[ \\])"
+	}
+}
