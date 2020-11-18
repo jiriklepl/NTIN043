@@ -1,0 +1,86 @@
+fmod BANK is
+   protecting NAT .
+   sorts Account Balance Card CardProvider CardPIN CardNumber .
+
+   --- Card ops
+   op nilCard : -> Card .
+   op card : CardNumber CardProvider -> Card .
+
+   --- CardPIN ops
+   op nilPIN : -> CardPIN .
+   op pin : Nat -> CardPIN .
+
+endfm
+
+fmod TERMINAL is
+   protecting RAT .
+   protecting BANK .
+   sorts State Terminal TerminalMemory Price .
+   subsorts Price < Rat .
+
+   var C : Card .
+   var C2 : Card .
+
+   --- State ops
+   ops idle waitingForCard waitingForPIN confirmation : -> State .
+   ops cardBlocked cardExpired accountEmpty : -> State .
+   var S : State .
+   var S2 : State .
+
+   --- Price ops
+   op nilPrice : -> Price .
+   op price : Rat -> Price .
+   var P : Price .
+
+   --- Terminal ops
+   op terminal : State TerminalMemory Card -> Terminal .
+   op terminalMemory : Price Card -> TerminalMemory .
+   var T : Terminal .
+   var TM : TerminalMemory .
+
+   op changeState : State Terminal -> Terminal .
+
+   eq changeState(S, terminal(S2, TM, C)) = terminal(S, TM, C) .
+
+   op savePrice : Price Terminal -> Terminal .
+   op resetPrice : Terminal -> Terminal .
+   op getPrice : Terminal -> Price .
+
+   eq savePrice(P, terminal(S, terminalMemory(nilPrice, C), C2)) = terminal(S, terminalMemory(P, C), C2) .
+   eq resetPrice(terminal(S, terminalMemory(P, C), C2)) = terminal(S, terminalMemory(nilPrice, C), C2) .
+   eq getPrice(terminal(S, terminalMemory(P, C), C2)) = P .
+
+   op saveCard : Card Terminal -> Terminal .
+   op resetCard : Terminal -> Terminal .
+
+   eq saveCard(C, terminal(S, terminalMemory(P, nilCard), C2)) = terminal(S, terminalMemory(P, C), C2) .
+   eq resetCard(terminal(S, terminalMemory(P, C), C2)) = terminal(S, terminalMemory(P, nilCard), C2) .
+
+
+   --- idle -> waitingForCard
+   op requestPayment : Terminal Price -> Terminal .
+
+   eq requestPayment(terminal(idle, TM, nilCard), P) =
+      savePrice(P, terminal(waitingForCard, TM, nilCard)) .
+
+   --- waitingForCard -> waitingForPIN or confirmation
+   ops attachCard swipeCard insertCard removeCard : Card Terminal -> Terminal .
+
+   eq attachCard(C, terminal(waitingForCard, TM, nilCard)) =
+      if getPrice(terminal(waitingForCard, TM, nilCard)) < 500
+      then requestTransaction(saveCard(C, terminal(confirmation, TM, nilCard)), nilPIN)
+      else saveCard(C, terminal(waitingForPIN, TM, nilCard))
+      fi .
+
+   eq swipeCard(C, terminal(waitingForCard, TM, nilCard)) =
+      saveCard(C, terminal(waitingForPIN, TM, nilCard)).
+
+   eq insertCard(C, terminal(waitingForCard, TM, nilCard)) =
+      saveCard(C, terminal(waitingForPIN, TM, C)).
+
+   eq removeCard(C, terminal(S, TM, C)) = terminal(S, TM, nilCard) .
+
+   --- waitingForPIN -> confirmation
+   ops requestTransaction : Terminal CardPIN -> Terminal .
+
+endfm
