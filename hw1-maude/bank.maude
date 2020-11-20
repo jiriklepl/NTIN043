@@ -1,13 +1,17 @@
 fmod BANK is
    protecting NAT .
    protecting RAT .
-   sorts Bank .
+   sorts Bank Date .
    sorts Account AccountNumber BankAccounts Amount Balance .
    subsort Balance < Amount < Rat .
    subsort AccountNumber < Nat .
-   sorts Card CardNumber BankCards BankName CardPIN .
-   subsort CardPIN < Nat .
+   sorts Card CardNumber BankCards BankName CardPIN CardIsBlocked CardExpDate CardStatus .
    subsort CardNumber < Nat .
+   subsort CardPIN < Nat .
+   subsort CardExpDate < Date < Nat .
+   subsort CardIsBlocked < Bool .
+
+   var D : Date .
 
    --- Account ops
    op account : AccountNumber Balance -> Account .
@@ -39,6 +43,9 @@ fmod BANK is
       fi .
    eq accountNumberToAccount(ANum, bankAccounts) = nilAccount .
 
+   op accountNumberToAccount : AccountNumber Bank -> Account .
+   eq accountNumberToAccount(ANum, bank(BName, BAccs, BCards)) = accountNumberToAccount(ANum, BAccs) .
+
    op removeAccount : AccountNumber BankAccounts -> BankAccounts .
    eq removeAccount(ANum, bankAccounts(Acc, BAccs)) =
       if ANum == getAccountNumber(Acc)
@@ -51,22 +58,37 @@ fmod BANK is
    eq updateAccountBalance(ANum, B, BAccs) =
       bankAccounts(account(ANum, B), removeAccount(ANum, BAccs)) .
 
+   op updateAccountBalance : AccountNumber Balance Bank -> Bank .
+   eq updateAccountBalance(ANum, B, bank(BName, BAccs, BCards)) =
+      bank(BName, updateAccountBalance(ANum, B, BAccs), BCards) .
+
    --- Card ops
    op nilCard : -> Card .
    op card : CardNumber BankName -> Card .
+   var C : Card .
    var CNum : CardNumber .
    var CNum2 : CardNumber .
 
-   op bankCards : CardNumber CardPIN AccountNumber BankCards -> BankCards .
+   op getCardBankName : Card -> BankName .
+   eq getCardBankName(card(CNum, BName)) = BName .
+
+   op getCardNumber : Card -> CardNumber .
+   eq getCardNumber(card(CNum, BName)) = CNum .
+
+   op bankCards : CardNumber CardPIN CardIsBlocked CardExpDate AccountNumber BankCards -> BankCards .
    op bankCards : -> BankCards .
    var BCards : BankCards .
+   var CBlocked : CardIsBlocked .
+   var CDate : CardExpDate .
 
    op nilPIN : -> CardPIN .
    var CPIN : CardPIN .
    var CPIN2 : CardPIN .
 
+   ops cardExpired cardBlocked cardOK cardNotOurs : -> CardStatus .
+
    op cardToAccountNumber : CardNumber CardPIN BankCards -> AccountNumber .
-   eq cardToAccountNumber(CNum, CPIN, bankCards(CNum2, CPIN2, ANum, BCards)) =
+   eq cardToAccountNumber(CNum, CPIN, bankCards(CNum2, CPIN2, CBlocked, CDate, ANum, BCards)) =
       if CNum == CNum2
          then if CPIN == CPIN2
             then ANum
@@ -75,6 +97,32 @@ fmod BANK is
          else cardToAccountNumber(CNum, CPIN, BCards)
       fi .
    eq cardToAccountNumber(CNum, CPIN, bankCards) = nilAccountNumber .
+
+   op cardToAccountNumber : Card CardPIN BankCards -> AccountNumber .
+   eq cardToAccountNumber(C, CPIN, BCards) = cardToAccountNumber(getCardNumber(C), CPIN, BCards) .
+
+   op cardToAccountNumber : Card CardPIN Bank -> AccountNumber .
+   eq cardToAccountNumber(C, CPIN, bank(BName, BAccs, BCards)) = cardToAccountNumber(getCardNumber(C), CPIN, BCards) .
+
+   op getCardStatus : CardNumber Date BankCards -> CardStatus .
+   eq getCardStatus(CNum, D, bankCards(CNum2, CPIN, CBlocked, CDate, ANum, BCards)) =
+      if CNum == CNum2
+         then if CBlocked == true
+            then cardBlocked
+            else if CDate < D
+               then cardExpired
+               else cardOK
+            fi
+         fi
+         else getCardStatus(CNum, D, BCards)
+      fi .
+   eq getCardStatus(CNum, D, bankCards) = cardNotOurs .
+
+   op getCardStatus : Card Date BankCards -> CardStatus .
+   eq getCardStatus(C, D, BCards) = getCardStatus(getCardNumber(C), D, BCards) .
+
+   op getCardStatus : Card Date Bank -> CardStatus .
+   eq getCardStatus(C, D, bank(BName, BAccs, BCards)) = getCardStatus(C, D, BCards) .
 
    op bank : BankName BankAccounts BankCards -> Bank .
    op nilBank : -> Bank .
