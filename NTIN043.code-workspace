@@ -11,10 +11,15 @@
 		]
 	},
 	"settings": {
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true,
 		"cSpell.words": [
+			"Accs",
+			"CPIN",
 			"contactless",
 			"endfm",
 			"fmod",
+			"subsort",
 			"subsorts"
 		],
 		"todo-tree.regex.regex": "((//|#|<!--|---|;|/\\*|^)\\s*($TAGS)|^\\s*- \\[ \\])"
