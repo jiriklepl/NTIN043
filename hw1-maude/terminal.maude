@@ -12,7 +12,7 @@ fmod TERMINAL is
    var BName : BankName .
 
    --- TerminalState ops
-   ops idle waitingForCard waitingForPIN badPIN waitingForTransaction confirmation : -> TerminalState .
+   ops idle waitingForCard waitingForPIN badPIN waitingForTransaction waitingForFastTransaction confirmation : -> TerminalState .
    var S : TerminalState .
    var S2 : TerminalState .
 
@@ -101,7 +101,6 @@ fmod TERMINAL is
    op getBankName : Terminal -> BankName .
    eq getBankName(terminal(S, TM, C)) = getBankName(TM) .
 
-
    op resetCardPIN : Terminal -> Terminal .
    eq resetCardPIN(terminal(S, TM, C)) = terminal(S, resetCardPIN(TM), C) .
 
@@ -110,12 +109,12 @@ fmod TERMINAL is
    eq requestPayment(P, terminal(idle, TM, nilCard)) =
       savePrice(P, terminal(waitingForCard, TM, nilCard)) .
 
-   --- waitingForCard -> waitingForPIN or confirmation
-   ops attachCard swipeCard insertCard removeCard : Card Terminal -> Terminal .
+   --- waitingForCard -> waitingForPIN or waitingForFastTransaction
+   ops attachCard swipeCard insertCard : Card Terminal -> Terminal .
 
    eq attachCard(C, terminal(waitingForCard, TM, nilCard)) =
       if getPrice(terminal(waitingForCard, TM, nilCard)) < 500
-      then saveCard(C, terminal(waitingForTransaction, TM, nilCard))
+      then saveCard(C, terminal(waitingForFastTransaction, TM, nilCard))
       else saveCard(C, terminal(waitingForPIN, TM, nilCard))
       fi .
 
@@ -125,10 +124,11 @@ fmod TERMINAL is
    eq insertCard(C, terminal(waitingForCard, TM, nilCard)) =
       saveCard(C, terminal(waitingForPIN, TM, C)).
 
-   eq removeCard(C, terminal(S, TM, C)) = terminal(S, TM, nilCard) .
+   --- removing the inserted card
+   op removeCard : Terminal -> Terminal .
+   eq removeCard(terminal(S, TM, C)) = terminal(S, TM, nilCard) .
 
    op providePIN : CardPIN Terminal -> Terminal .
-
    eq providePIN(CPIN, terminal(waitingForPIN, TM, C)) =
       if CPIN <= 999999
          then saveCardPIN(CPIN, terminal(waitingForTransaction, TM, C))

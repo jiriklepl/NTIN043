@@ -100,11 +100,25 @@ fmod BANK is
       fi .
    eq cardToAccountNumber(CNum, CPIN, bankCards) = nilAccountNumber .
 
+   op cardToAccountNumber : CardNumber BankCards -> AccountNumber .
+   eq cardToAccountNumber(CNum, bankCards(CNum2, CPIN, CBlocked, CDate, ANum, BCards)) =
+      if CNum == CNum2
+         then ANum
+         else cardToAccountNumber(CNum, BCards)
+      fi .
+   eq cardToAccountNumber(CNum, CPIN, bankCards) = nilAccountNumber .
+
    op cardToAccountNumber : Card CardPIN BankCards -> AccountNumber .
    eq cardToAccountNumber(C, CPIN, BCards) = cardToAccountNumber(getCardNumber(C), CPIN, BCards) .
 
+   op cardToAccountNumber : Card BankCards -> AccountNumber .
+   eq cardToAccountNumber(C, BCards) = cardToAccountNumber(getCardNumber(C), BCards) .
+
    op cardToAccountNumber : Card CardPIN Bank -> AccountNumber .
    eq cardToAccountNumber(C, CPIN, bank(BName, BAccs, BCards)) = cardToAccountNumber(getCardNumber(C), CPIN, BCards) .
+
+   op cardToAccountNumber : Card Bank -> AccountNumber .
+   eq cardToAccountNumber(C, bank(BName, BAccs, BCards)) = cardToAccountNumber(getCardNumber(C), BCards) .
 
    op getCardStatus : CardNumber Date BankCards -> CardStatus .
    eq getCardStatus(CNum, D, bankCards(CNum2, CPIN, CBlocked, CDate, ANum, BCards)) =
@@ -126,6 +140,7 @@ fmod BANK is
    op getCardStatus : Card Date Bank -> CardStatus .
    eq getCardStatus(C, D, bank(BName, BAccs, BCards)) = getCardStatus(C, D, BCards) .
 
+   --- Bank definition
    op bank : BankName BankAccounts BankCards -> Bank .
    op nilBank : -> Bank .
    var BName : BankName .

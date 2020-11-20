@@ -23,6 +23,7 @@ fmod WORLD is
    op getWorldDate : World -> Date .
    eq getWorldDate(world(D, WBanks)) = D .
 
+   --- bank-specific definitions
    op worldBanks : Bank WorldBanks -> WorldBanks .
    op worldBanks : -> WorldBanks .
    var WBanks : WorldBanks .
@@ -52,12 +53,14 @@ fmod WORLD is
    op addBank : Bank World -> World .
    eq addBank(B, world(D, WBanks)) = world(D, worldBanks(B, WBanks)) .
 
+   --- possible results of a transaction
    op transactionResult : TransactionError World -> TransactionResult .
    op transactionResult : CardStatus World -> TransactionResult .
    op transactionResult : Terminal World -> TransactionResult .
    op transactionResult : World -> TransactionResult .
    ops insufficientBalance wrongPIN nonexistentBank wrongAccount : -> TransactionError .
 
+   --- normal transaction:
    op transaction : Card CardPIN Amount BankName AccountNumber World -> TransactionResult .
    eq transaction(C, CPIN, A, BName, ANum, W) =
       transaction(
@@ -112,15 +115,49 @@ fmod WORLD is
             getAccountNumber(TM),
             W)) .
 
+   --- for contactless:
+   op transaction : Card Amount BankName AccountNumber World -> TransactionResult .
+   eq transaction(C, A, BName, ANum, W) =
+      transaction(
+         getBankByName(getCardBankName(C), W),
+         C,
+         A,
+         getBankByName(BName, W),
+         ANum,
+         W) .
+
+   op transaction : Bank Card Amount Bank AccountNumber World -> TransactionResult .
+   eq transaction(B, C, CPIN, A, B2, ANum, W) =
+      if B == nilBank or B2 == nilBank
+         then transactionResult(nonexistentBank, W)
+         else if getCardStatus(C, getWorldDate(W), B) == cardOK
+            then transaction(B, cardToAccountNumber(C, B), A, B2, ANum, W)
+            else transactionResult(getCardStatus(C, getWorldDate(W), B), W)
+         fi
+      fi .
+
+   op transaction : Terminal World -> TransactionResult .
+   eq transaction(terminal(waitingForFastTransaction, TM, C), W) =
+      transaction(
+         terminal(waitingForFastTransaction, TM, C),
+         transaction(
+            getCard(TM),
+            getPrice(TM),
+            getBankName(TM),
+            getAccountNumber(TM),
+            W)) .
+
+   --- finalizing Terminal transactions:
    var TErr : TransactionError .
    var CErr : CardStatus .
    var Term : Terminal .
+   var TState : TerminalState .
    op transaction : Terminal TransactionResult -> TransactionResult .
-   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(W)) =
+   eq transaction(terminal(TState, TM, C), transactionResult(W)) =
       transactionResult(terminal(confirmation, TM, C), W) .
-   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(TErr, W)) =
+   eq transaction(terminal(TState, TM, C), transactionResult(TErr, W)) =
       transactionResult(terminal(errorState(TErr), TM, C), W) .
-   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(CErr, W)) =
+   eq transaction(terminal(TState, TM, C), transactionResult(CErr, W)) =
       transactionResult(terminal(errorState(CErr), TM, C), W) .
 
    op errorState : TransactionError -> TerminalState .
