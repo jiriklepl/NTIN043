@@ -1,4 +1,4 @@
 .PHONY: all
 
-all: terminal.maude
-	maude terminal.maude
+all: test.maude
+	maude test.maude

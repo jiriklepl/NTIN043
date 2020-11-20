@@ -1,0 +1,45 @@
+load world.maude .
+
+fmod TEST is
+
+    protecting WORLD .
+    ex NAT .
+    ex TERMINAL .
+
+    vars DD MM YY : Nat .
+    var S : String .
+    op makeDate : Nat Nat Nat -> Date .
+    op makeDate : Nat Nat -> Date .
+    ceq makeDate(DD, MM, YY) = YY * 10000 + MM * 100 + DD if DD <= 31 and MM <= 12 .
+    ceq makeDate(MM, YY) = YY * 10000 + MM * 100 if MM <= 12 .
+
+    ops dummyBank : String -> Bank .
+    eq dummyBank(S) =
+        bank(
+            S,
+            bankAccounts(account(0,100000), bankAccounts),
+            bankCards(0, 1234, false, makeDate(12,2020), 0, bankCards)) .
+
+    op dummyWorld : -> World .
+    eq dummyWorld = addBank(dummyBank("CSOB"), addBank(dummyBank("KB"), world(makeDate(11,2020), worldBanks))) .
+
+    op dummyCard : -> Card .
+    eq dummyCard = card(0, "CSOB") .
+
+    op dummyTerminal : -> Terminal .
+    eq dummyTerminal = terminal(idle, terminalMemory(nilPrice, 0, "KB", nilCard, nilPIN), nilCard) .
+
+    op dummyPayment : -> Terminal .
+    eq dummyPayment = requestPayment(1000, dummyTerminal) .
+
+    op dummyReceivedCard : -> Terminal .
+    eq dummyReceivedCard = attachCard(dummyCard, dummyPayment) .
+
+    op dummyProvidedPIN : -> Terminal .
+    eq dummyProvidedPIN = providePIN(1234, dummyReceivedCard) .
+
+    op dummyTransaction : -> TransactionResult .
+    eq dummyTransaction = transaction(dummyProvidedPIN, dummyWorld) .
+
+
+endfm

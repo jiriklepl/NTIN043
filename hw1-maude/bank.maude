@@ -1,15 +1,17 @@
 fmod BANK is
    protecting NAT .
    protecting RAT .
+   protecting STRING .
    sorts Bank Date .
    sorts Account AccountNumber BankAccounts Amount Balance .
-   subsort Balance < Amount < Rat .
-   subsort AccountNumber < Nat .
+   subsort Rat < Amount < Balance .
+   subsort Nat < AccountNumber .
    sorts Card CardNumber BankCards BankName CardPIN CardIsBlocked CardExpDate CardStatus .
-   subsort CardNumber < Nat .
-   subsort CardPIN < Nat .
-   subsort CardExpDate < Date < Nat .
-   subsort CardIsBlocked < Bool .
+   subsort String < BankName .
+   subsort Nat < CardNumber .
+   subsort Nat < CardPIN .
+   subsort Nat < Date < CardExpDate .
+   subsort Bool < CardIsBlocked .
 
    var D : Date .
 
@@ -70,10 +72,10 @@ fmod BANK is
    var CNum2 : CardNumber .
 
    op getCardBankName : Card -> BankName .
-   eq getCardBankName(card(CNum, BName)) = BName .
+   eq getCardBankName (card ( CNum, BName ) ) = BName .
 
    op getCardNumber : Card -> CardNumber .
-   eq getCardNumber(card(CNum, BName)) = CNum .
+   eq getCardNumber (card (CNum, BName ) ) = CNum .
 
    op bankCards : CardNumber CardPIN CardIsBlocked CardExpDate AccountNumber BankCards -> BankCards .
    op bankCards : -> BankCards .

@@ -1,6 +1,7 @@
-load bank.maude .
+load terminal.maude .
 
 fmod WORLD is
+   protecting TERMINAL .
    protecting BANK .
    sorts World WorldBanks TransactionResult TransactionError .
    var BName : BankName .
@@ -13,6 +14,7 @@ fmod WORLD is
    var A : Amount .
    var CS  : CardStatus .
    var W : World .
+   var TM : TerminalMemory .
 
    op world : Date WorldBanks -> World .
 
@@ -44,8 +46,15 @@ fmod WORLD is
    op getBankByName : BankName World -> Bank .
    eq getBankByName(BName, W) = getBankByName(BName, getWorldBanks(W)) .
 
+   op addBank : Bank WorldBanks -> WorldBanks .
+   eq addBank(B, WBanks) = worldBanks(B, WBanks) .
+
+   op addBank : Bank World -> World .
+   eq addBank(B, world(D, WBanks)) = world(D, worldBanks(B, WBanks)) .
+
    op transactionResult : TransactionError World -> TransactionResult .
    op transactionResult : CardStatus World -> TransactionResult .
+   op transactionResult : Terminal World -> TransactionResult .
    op transactionResult : World -> TransactionResult .
    ops insufficientBalance wrongPIN nonexistentBank wrongAccount : -> TransactionError .
 
@@ -90,6 +99,41 @@ fmod WORLD is
             else transactionResult(insufficientBalance, W)
          fi
       fi .
+
+   op transaction : Terminal World -> TransactionResult .
+   eq transaction(terminal(waitingForTransaction, TM, C), W) =
+      transaction(
+         terminal(waitingForTransaction, TM, C),
+         transaction(
+            getCard(TM),
+            getCardPIN(TM),
+            getPrice(TM),
+            getBankName(TM),
+            getAccountNumber(TM),
+            W)) .
+
+   var TErr : TransactionError .
+   var CErr : CardStatus .
+   var Term : Terminal .
+   op transaction : Terminal TransactionResult -> TransactionResult .
+   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(W)) =
+      transactionResult(terminal(confirmation, TM, C), W) .
+   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(TErr, W)) =
+      transactionResult(terminal(errorState(TErr), TM, C), W) .
+   eq transaction(terminal(waitingForTransaction, TM, C), transactionResult(CErr, W)) =
+      transactionResult(terminal(errorState(CErr), TM, C), W) .
+
+   op errorState : TransactionError -> TerminalState .
+   op errorState : CardStatus -> TerminalState .
+
+   op getWorld : TransactionResult -> World .
+   eq getWorld(transactionResult(Term, W)) = W .
+
+   op getTerminal : TransactionResult -> Terminal .
+   eq getTerminal(transactionResult(Term, W)) =
+      resetCardPIN(
+         resetCard(
+            resetPrice(changeState(idle, Term)))) .
 
    op updateAccountBalance : AccountNumber Amount Bank WorldBanks -> WorldBanks .
    eq updateAccountBalance(ANum, A, B, WBanks) =

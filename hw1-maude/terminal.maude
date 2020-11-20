@@ -1,56 +1,113 @@
-load world.maude .
+load bank.maude .
 
 fmod TERMINAL is
-   protecting RAT .
    protecting BANK .
-   sorts State Terminal TerminalMemory Price .
-   subsort Price < Rat .
+   sorts TerminalState Terminal TerminalMemory Price .
+   subsort Amount < Price .
 
-   var A : AccountNumber .
+   var ANum : AccountNumber .
    var C : Card .
    var C2 : Card .
+   var CPIN : CardPIN .
+   var BName : BankName .
 
-   --- State ops
-   ops idle waitingForCard waitingForPIN confirmation : -> State .
-   ops cardBlocked cardExpired accountEmpty : -> State .
-   var S : State .
-   var S2 : State .
+   --- TerminalState ops
+   ops idle waitingForCard waitingForPIN badPIN waitingForTransaction confirmation : -> TerminalState .
+   var S : TerminalState .
+   var S2 : TerminalState .
 
    --- Price ops
    op nilPrice : -> Price .
    var P : Price .
 
    --- Terminal ops
-   op terminal : State TerminalMemory Card -> Terminal .
-   op terminalMemory : Price AccountNumber Card -> TerminalMemory .
+   op terminal : TerminalState TerminalMemory Card -> Terminal .
+   op terminalMemory : Price AccountNumber BankName Card CardPIN -> TerminalMemory .
    var T : Terminal .
    var TM : TerminalMemory .
 
-   op changeState : State Terminal -> Terminal .
+   op changeState : TerminalState Terminal -> Terminal .
    eq changeState(S, terminal(S2, TM, C)) = terminal(S, TM, C) .
 
+   op getState : Terminal -> TerminalState .
+   eq getState(terminal(S, TM, C)) = S .
+
+   op savePrice : Price TerminalMemory -> TerminalMemory .
+   eq savePrice(P, terminalMemory(nilPrice, ANum, BName, C, CPIN)) =
+      terminalMemory(P, ANum, BName, C, CPIN) .
+
    op savePrice : Price Terminal -> Terminal .
-   eq savePrice(P, terminal(S, terminalMemory(nilPrice, A, C), C2)) =
-      terminal(S, terminalMemory(P, A, C), C2) .
+   eq savePrice(P, terminal(S, TM, C)) = terminal(S, savePrice(P, TM), C) .
+
+   op resetPrice : TerminalMemory -> TerminalMemory .
+   eq resetPrice(terminalMemory(P, ANum, BName, C, CPIN)) =
+      terminalMemory(nilPrice, ANum, BName, C, CPIN) .
 
    op resetPrice : Terminal -> Terminal .
-   eq resetPrice(terminal(S, terminalMemory(P, A, C), C2)) =
-      terminal(S, terminalMemory(nilPrice, A, C), C2) .
+   eq resetPrice(terminal(S, TM, C)) = terminal(S, resetPrice(TM), C) .
+
+   op getPrice : TerminalMemory -> Price .
+   eq getPrice(terminalMemory(P, ANum, BName, C, CPIN)) = P .
 
    op getPrice : Terminal -> Price .
-   eq getPrice(terminal(S, terminalMemory(P, A, C), C2)) = P .
+   eq getPrice(terminal(S, TM, C)) = getPrice(TM) .
+
+   op saveCard : Card TerminalMemory -> TerminalMemory .
+   eq saveCard(C, terminalMemory(P, ANum, BName, nilCard, CPIN)) =
+      terminalMemory(P, ANum, BName, C, CPIN) .
 
    op saveCard : Card Terminal -> Terminal .
-   eq saveCard(C, terminal(S, terminalMemory(P, A, nilCard), C2)) =
-      terminal(S, terminalMemory(P, A, C), C2) .
+   eq saveCard(C, terminal(S, TM, C2)) = terminal(S, saveCard(C, TM), C2) .
+
+   op getCard : TerminalMemory -> Card .
+   eq getCard(terminalMemory(P, ANum, BName, C, CPIN)) = C .
+
+   op getCard : Terminal -> Card .
+   eq getCard(terminal(S, TM, C)) = getCard(TM) .
+
+   op resetCard : TerminalMemory -> TerminalMemory .
+   eq resetCard(terminalMemory(P, ANum, BName, C, CPIN)) =
+      terminalMemory(P, ANum, BName, nilCard, CPIN) .
 
    op resetCard : Terminal -> Terminal .
-   eq resetCard(terminal(S, terminalMemory(P, A, C), C2)) =
-      terminal(S, terminalMemory(P, A, nilCard), C2) .
+   eq resetCard(terminal(S, TM, C)) = terminal(S, resetCard(TM), C) .
+
+   op saveCardPIN : CardPIN TerminalMemory -> TerminalMemory .
+   eq saveCardPIN(CPIN, terminalMemory(P, ANum, BName, C, nilPIN)) =
+      terminalMemory(P, ANum, BName, C, CPIN) .
+
+   op saveCardPIN : CardPIN Terminal -> Terminal .
+   eq saveCardPIN(CPIN, terminal(S, TM, C)) = terminal(S, saveCardPIN(CPIN, TM), C) .
+
+   op getCardPIN : TerminalMemory -> CardPIN .
+   eq getCardPIN(terminalMemory(P, ANum, BName, C, CPIN)) = CPIN .
+
+   op getCardPIN : Terminal -> CardPIN .
+   eq getCardPIN(terminal(S, TM, C)) = getCardPIN(TM) .
+
+   op resetCardPIN : TerminalMemory -> TerminalMemory .
+   eq resetCardPIN(terminalMemory(P, ANum, BName, C, CPIN)) =
+      terminalMemory(P, ANum, BName, C, nilPIN) .
+
+   op getAccountNumber : TerminalMemory -> AccountNumber .
+   eq getAccountNumber(terminalMemory(P, ANum, BName, C, CPIN)) = ANum .
+
+   op getAccountNumber : Terminal -> AccountNumber .
+   eq getAccountNumber(terminal(S, TM, C)) = getAccountNumber(TM) .
+
+   op getBankName : TerminalMemory -> BankName .
+   eq getBankName(terminalMemory(P, ANum, BName, C, CPIN)) = BName .
+
+   op getBankName : Terminal -> BankName .
+   eq getBankName(terminal(S, TM, C)) = getBankName(TM) .
+
+
+   op resetCardPIN : Terminal -> Terminal .
+   eq resetCardPIN(terminal(S, TM, C)) = terminal(S, resetCardPIN(TM), C) .
 
    --- idle -> waitingForCard
-   op requestPayment : Terminal Price -> Terminal .
-   eq requestPayment(terminal(idle, TM, nilCard), P) =
+   op requestPayment : Price Terminal -> Terminal .
+   eq requestPayment(P, terminal(idle, TM, nilCard)) =
       savePrice(P, terminal(waitingForCard, TM, nilCard)) .
 
    --- waitingForCard -> waitingForPIN or confirmation
@@ -58,7 +115,7 @@ fmod TERMINAL is
 
    eq attachCard(C, terminal(waitingForCard, TM, nilCard)) =
       if getPrice(terminal(waitingForCard, TM, nilCard)) < 500
-      then requestTransaction(saveCard(C, terminal(confirmation, TM, nilCard)), nilPIN)
+      then saveCard(C, terminal(waitingForTransaction, TM, nilCard))
       else saveCard(C, terminal(waitingForPIN, TM, nilCard))
       fi .
 
@@ -70,8 +127,12 @@ fmod TERMINAL is
 
    eq removeCard(C, terminal(S, TM, C)) = terminal(S, TM, nilCard) .
 
-   --- waitingForPIN -> confirmation
-   op requestTransaction : Terminal CardPIN -> Terminal .
-   --- TODO: #1 requestTransaction
+   op providePIN : CardPIN Terminal -> Terminal .
+
+   eq providePIN(CPIN, terminal(waitingForPIN, TM, C)) =
+      if CPIN <= 999999
+         then saveCardPIN(CPIN, terminal(waitingForTransaction, TM, C))
+         else terminal(badPIN, TM, C)
+      fi .
 
 endfm
