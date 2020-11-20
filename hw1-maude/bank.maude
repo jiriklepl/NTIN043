@@ -1,0 +1,85 @@
+fmod BANK is
+   protecting NAT .
+   protecting RAT .
+   sorts Bank .
+   sorts Account AccountNumber BankAccounts Amount Balance .
+   subsort Balance < Amount < Rat .
+   subsort AccountNumber < Nat .
+   sorts Card CardNumber BankCards BankName CardPIN .
+   subsort CardPIN < Nat .
+   subsort CardNumber < Nat .
+
+   --- Account ops
+   op account : AccountNumber Balance -> Account .
+   var ANum : AccountNumber .
+   var ANum2 : AccountNumber .
+   var B : Balance .
+   var B2 : Balance .
+
+   op nilAccount : -> Account .
+   op nilAccountNumber : -> AccountNumber .
+
+   op getAccountNumber : Account -> AccountNumber .
+   eq getAccountNumber(account(ANum, B)) = ANum .
+
+   op getAccountBalance : Account -> AccountNumber .
+   eq getAccountBalance(account(ANum, B)) = B .
+
+   op bankAccounts : Account BankAccounts -> BankAccounts .
+   op bankAccounts : -> BankAccounts .
+   var Acc : Account .
+   var Acc2 : Account .
+   var BAccs : BankAccounts .
+
+   op accountNumberToAccount : AccountNumber BankAccounts -> Account .
+   eq accountNumberToAccount(ANum, bankAccounts(Acc, BAccs)) =
+      if ANum == getAccountNumber(Acc)
+         then Acc
+         else accountNumberToAccount(ANum, BAccs)
+      fi .
+   eq accountNumberToAccount(ANum, bankAccounts) = nilAccount .
+
+   op removeAccount : AccountNumber BankAccounts -> BankAccounts .
+   eq removeAccount(ANum, bankAccounts(Acc, BAccs)) =
+      if ANum == getAccountNumber(Acc)
+         then BAccs
+         else bankAccounts(Acc, removeAccount(ANum, BAccs))
+      fi .
+   eq removeAccount(ANum, bankAccounts) = bankAccounts .
+
+   op updateAccountBalance : AccountNumber Balance BankAccounts -> BankAccounts .
+   eq updateAccountBalance(ANum, B, BAccs) =
+      bankAccounts(account(ANum, B), removeAccount(ANum, BAccs)) .
+
+   --- Card ops
+   op nilCard : -> Card .
+   op card : CardNumber BankName -> Card .
+   var CNum : CardNumber .
+   var CNum2 : CardNumber .
+
+   op bankCards : CardNumber CardPIN AccountNumber BankCards -> BankCards .
+   op bankCards : -> BankCards .
+   var BCards : BankCards .
+
+   op nilPIN : -> CardPIN .
+   var CPIN : CardPIN .
+   var CPIN2 : CardPIN .
+
+   op cardToAccountNumber : CardNumber CardPIN BankCards -> AccountNumber .
+   eq cardToAccountNumber(CNum, CPIN, bankCards(CNum2, CPIN2, ANum, BCards)) =
+      if CNum == CNum2
+         then if CPIN == CPIN2
+            then ANum
+            else nilAccountNumber
+         fi
+         else cardToAccountNumber(CNum, CPIN, BCards)
+      fi .
+   eq cardToAccountNumber(CNum, CPIN, bankCards) = nilAccountNumber .
+
+   op bank : BankName BankAccounts BankCards -> Bank .
+   op nilBank : -> Bank .
+   var BName : BankName .
+
+   op getBankName : Bank -> BankName .
+   eq getBankName(bank(BName, BAccs, BCards)) = BName .
+endfm

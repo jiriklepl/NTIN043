@@ -1,0 +1,23 @@
+load bank.maude .
+
+fmod WORLD is
+   protecting BANK .
+   sorts World WorldBanks .
+   var BName : BankName .
+   var B : Bank .
+
+   op worldBanks : Bank WorldBanks -> WorldBanks .
+   op worldBanks : -> WorldBanks .
+   var WBanks : WorldBanks .
+
+   op getBankByName : BankName WorldBanks -> Bank .
+   eq getBankByName(BName, worldBanks(B, WBanks)) =
+      if BName == getBankName(B)
+         then B
+         else getBankByName(BName, WBanks)
+      fi .
+
+   eq getBankByName(BName, worldBanks) = nilBank .
+
+   --- TODO: #2 allow the world to change
+endfm
