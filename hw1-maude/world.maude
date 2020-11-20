@@ -2,9 +2,24 @@ load bank.maude .
 
 fmod WORLD is
    protecting BANK .
-   sorts World WorldBanks .
+   sorts World WorldBanks TransactionResult TransactionError .
    var BName : BankName .
    var B : Bank .
+   var B2 : Bank .
+   var C : Card .
+   var D : Date .
+   var CPIN : CardPIN .
+   vars ANum, ANum2 : AccountNumber .
+   var A : Amount .
+   var CS  : CardStatus .
+   var W : World .
+
+   op world : Date WorldBanks -> World .
+
+   op getWorldBanks : World -> WorldBanks .
+   eq getWorldBanks(world(D, WBanks)) = WBanks .
+   op getWorldDate : World -> Date .
+   eq getWorldDate(world(D, WBanks)) = D .
 
    op worldBanks : Bank WorldBanks -> WorldBanks .
    op worldBanks : -> WorldBanks .
@@ -16,8 +31,70 @@ fmod WORLD is
          then B
          else getBankByName(BName, WBanks)
       fi .
-
    eq getBankByName(BName, worldBanks) = nilBank .
 
-   --- TODO: #2 allow the world to change
+   op removeBankByName : BankName WorldBanks -> WorldBanks .
+   eq removeBankByName(BName, worldBanks(B, WBanks)) =
+      if BName == getBankName(B)
+         then WBanks
+         else worldBanks(B, removeBankByName(BName, WBanks))
+      fi .
+   eq removeBankByName(BName, worldBanks) = worldBanks .
+
+   op getBankByName : BankName World -> Bank .
+   eq getBankByName(BName, W) = getBankByName(BName, getWorldBanks(W)) .
+
+   op transactionResult : TransactionError World -> TransactionResult .
+   op transactionResult : CardStatus World -> TransactionResult .
+   op transactionResult : World -> TransactionResult .
+   ops insufficientBalance wrongPIN nonexistentBank wrongAccount : -> TransactionError .
+
+   op transaction : Card CardPIN Amount BankName AccountNumber World -> TransactionResult .
+   eq transaction(C, CPIN, A, BName, ANum, W) =
+      transaction(
+         getBankByName(getCardBankName(C), W),
+         C,
+         CPIN,
+         A,
+         getBankByName(BName, W),
+         ANum,
+         W) .
+
+   op transaction : Bank Card CardPIN Amount Bank AccountNumber World -> TransactionResult .
+   eq transaction(B, C, CPIN, A, B2, ANum, W) =
+      if B == nilBank or B2 == nilBank
+         then transactionResult(nonexistentBank, W)
+         else if getCardStatus(C, getWorldDate(W), B) == cardOK
+            then if cardToAccountNumber(C, CPIN, B) == nilAccountNumber
+               then transactionResult(wrongPIN, W)
+               else transaction(B, cardToAccountNumber(C, CPIN, B), A, B2, ANum, W)
+            fi
+            else transactionResult(getCardStatus(C, getWorldDate(W), B), W)
+         fi
+      fi .
+
+   op transaction : Bank AccountNumber Amount Bank AccountNumber World -> TransactionResult .
+   eq transaction(B, ANum, A, B2, ANum2, W) =
+      if accountNumberToAccount(ANum, B) == nilAccount or accountNumberToAccount(ANum2, B2) == nilAccount
+         then transactionResult(wrongAccount, W)
+         else if getAccountBalance(accountNumberToAccount(ANum, B)) >= A
+            then transactionResult(updateAccountBalance(
+               ANum2,
+               getAccountBalance(accountNumberToAccount(ANum2, B2)) + A,
+               B2,
+               updateAccountBalance(
+                  ANum,
+                  getAccountBalance(accountNumberToAccount(ANum, B)) - A,
+                  B,
+                  W)))
+            else transactionResult(insufficientBalance, W)
+         fi
+      fi .
+
+   op updateAccountBalance : AccountNumber Amount Bank WorldBanks -> WorldBanks .
+   eq updateAccountBalance(ANum, A, B, WBanks) =
+      worldBanks(updateAccountBalance(ANum, A, B), removeBankByName(getBankName(B), WBanks)) .
+
+   op updateAccountBalance : AccountNumber Amount Bank World -> World .
+   eq updateAccountBalance(ANum, A, B, world(D, WBanks)) = world(D, updateAccountBalance(ANum, A, B, WBanks)) .
 endfm
