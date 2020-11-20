@@ -1,23 +1,142 @@
 fmod BANK is
    protecting NAT .
-   sorts Account Balance Card CardProvider CardPIN CardNumber .
+   protecting RAT .
+   sorts Bank .
+   sorts Account AccountNumber BankAccounts Amount Balance .
+   subsort Balance < Amount < Rat .
+   subsort AccountNumber < Nat .
+   sorts Card CardNumber BankCards BankName CardPIN .
+   subsort CardPIN < Nat .
+   subsort CardNumber < Nat .
+
+   --- Account ops
+   op account : AccountNumber Balance -> Account .
+   var ANum : AccountNumber .
+   var ANum2 : AccountNumber .
+   var B : Balance .
+   var B2 : Balance .
+
+   op nilAccount : -> Account .
+   op nilAccountNumber : -> AccountNumber .
+
+   op getAccountNumber : Account -> AccountNumber .
+   eq getAccountNumber(account(ANum, B)) = ANum .
+
+   op getAccountBalance : Account -> AccountNumber .
+   eq getAccountBalance(account(ANum, B)) = B .
+
+   op bankAccounts : Account BankAccounts -> BankAccounts .
+   op bankAccounts : -> BankAccounts .
+   var Acc : Account .
+   var Acc2 : Account .
+   var BAccs : BankAccounts .
+
+   op accountNumberToAccount : AccountNumber BankAccounts -> Account .
+   eq accountNumberToAccount(ANum, bankAccounts(Acc, BAccs)) =
+      if ANum == getAccountNumber(Acc)
+         then Acc
+         else accountNumberToAccount(ANum, BAccs)
+      fi .
+   eq accountNumberToAccount(ANum, bankAccounts) = nilAccount .
+
+   op removeAccount : AccountNumber BankAccounts -> BankAccounts .
+   eq removeAccount(ANum, bankAccounts(Acc, BAccs)) =
+      if ANum == getAccountNumber(Acc)
+         then BAccs
+         else bankAccounts(Acc, removeAccount(ANum, BAccs))
+      fi .
+   eq removeAccount(ANum, bankAccounts) = bankAccounts .
+
+   op updateAccountBalance : AccountNumber Balance BankAccounts -> BankAccounts .
+   eq updateAccountBalance(ANum, B, BAccs) =
+      bankAccounts(account(ANum, B), removeAccount(ANum, BAccs)) .
 
    --- Card ops
    op nilCard : -> Card .
-   op card : CardNumber CardProvider -> Card .
+   op card : CardNumber BankName -> Card .
+   var CNum : CardNumber .
+   var CNum2 : CardNumber .
 
-   --- CardPIN ops
+   op bankCards : CardNumber CardPIN AccountNumber BankCards -> BankCards .
+   op bankCards : -> BankCards .
+   var BCards : BankCards .
+
    op nilPIN : -> CardPIN .
-   op pin : Nat -> CardPIN .
+   var CPIN : CardPIN .
+   var CPIN2 : CardPIN .
 
+   op cardToAccountNumber : CardNumber CardPIN BankCards -> AccountNumber .
+   eq cardToAccountNumber(CNum, CPIN, bankCards(CNum2, CPIN2, ANum, BCards)) =
+      if CNum == CNum2
+         then if CPIN == CPIN2
+            then ANum
+            else nilAccountNumber
+         fi
+         else cardToAccountNumber(CNum, CPIN, BCards)
+      fi .
+   eq cardToAccountNumber(CNum, CPIN, bankCards) = nilAccountNumber .
+
+   op bank : BankName BankAccounts BankCards -> Bank .
+   op nilBank : -> Bank .
+   var BName : BankName .
+
+   op getBankName : Bank -> BankName .
+   eq getBankName(bank(BName, BAccs, BCards)) = BName .
+
+   var A : Amount .
+
+   op receiveTransaction : Card CardPIN Amount AccountNumber Bank -> Bank .
+   eq receiveTransaction(card(CNum, BName), CPIN, A, ANum, bank(BName, BAccs, BCards)) =
+      transfer(accountNumberToAccount(ANum, BAccs),
+               A,
+               accountNumberToAccount(cardToAccountNumber(CNum, CPIN, BCards), BAccs),
+               bank(BName, BAccs, BCards)) .
+
+   op transfer : Account Amount Account Bank -> Bank .
+   eq transfer(Acc, A, Acc2, bank(BName, BAccs, BCards)) =
+      if getAccountBalance(Acc) >= A
+         then bank(BName,
+                  updateAccountBalance(
+                     getAccountNumber(Acc2),
+                     getAccountBalance(Acc2) + A,
+                     updateAccountBalance(
+                        getAccountNumber(Acc),
+                        getAccountBalance(Acc) - A,
+                        BAccs)),
+                  BCards)
+         else nilBank
+      fi .
+endfm
+
+fmod WORLD is
+   protecting BANK .
+   sorts World WorldBanks .
+   var BName : BankName .
+   var B : Bank .
+
+   op worldBanks : Bank WorldBanks -> WorldBanks .
+   op worldBanks : -> WorldBanks .
+   var WBanks : WorldBanks .
+
+   op getBankByName : BankName WorldBanks -> Bank .
+   eq getBankByName(BName, worldBanks(B, WBanks)) =
+      if BName == getBankName(B)
+         then B
+         else getBankByName(BName, WBanks)
+      fi .
+
+   eq getBankByName(BName, worldBanks) = nilBank .
+
+   --- TODO: #2 allow the world to change
 endfm
 
 fmod TERMINAL is
    protecting RAT .
    protecting BANK .
    sorts State Terminal TerminalMemory Price .
-   subsorts Price < Rat .
+   subsort Price < Rat .
 
+   var A : AccountNumber .
    var C : Card .
    var C2 : Card .
 
@@ -29,37 +148,38 @@ fmod TERMINAL is
 
    --- Price ops
    op nilPrice : -> Price .
-   op price : Rat -> Price .
    var P : Price .
 
    --- Terminal ops
    op terminal : State TerminalMemory Card -> Terminal .
-   op terminalMemory : Price Card -> TerminalMemory .
+   op terminalMemory : Price AccountNumber Card -> TerminalMemory .
    var T : Terminal .
    var TM : TerminalMemory .
 
    op changeState : State Terminal -> Terminal .
-
    eq changeState(S, terminal(S2, TM, C)) = terminal(S, TM, C) .
 
    op savePrice : Price Terminal -> Terminal .
-   op resetPrice : Terminal -> Terminal .
-   op getPrice : Terminal -> Price .
+   eq savePrice(P, terminal(S, terminalMemory(nilPrice, A, C), C2)) =
+      terminal(S, terminalMemory(P, A, C), C2) .
 
-   eq savePrice(P, terminal(S, terminalMemory(nilPrice, C), C2)) = terminal(S, terminalMemory(P, C), C2) .
-   eq resetPrice(terminal(S, terminalMemory(P, C), C2)) = terminal(S, terminalMemory(nilPrice, C), C2) .
-   eq getPrice(terminal(S, terminalMemory(P, C), C2)) = P .
+   op resetPrice : Terminal -> Terminal .
+   eq resetPrice(terminal(S, terminalMemory(P, A, C), C2)) =
+      terminal(S, terminalMemory(nilPrice, A, C), C2) .
+
+   op getPrice : Terminal -> Price .
+   eq getPrice(terminal(S, terminalMemory(P, A, C), C2)) = P .
 
    op saveCard : Card Terminal -> Terminal .
+   eq saveCard(C, terminal(S, terminalMemory(P, A, nilCard), C2)) =
+      terminal(S, terminalMemory(P, A, C), C2) .
+
    op resetCard : Terminal -> Terminal .
-
-   eq saveCard(C, terminal(S, terminalMemory(P, nilCard), C2)) = terminal(S, terminalMemory(P, C), C2) .
-   eq resetCard(terminal(S, terminalMemory(P, C), C2)) = terminal(S, terminalMemory(P, nilCard), C2) .
-
+   eq resetCard(terminal(S, terminalMemory(P, A, C), C2)) =
+      terminal(S, terminalMemory(P, A, nilCard), C2) .
 
    --- idle -> waitingForCard
    op requestPayment : Terminal Price -> Terminal .
-
    eq requestPayment(terminal(idle, TM, nilCard), P) =
       savePrice(P, terminal(waitingForCard, TM, nilCard)) .
 
@@ -81,6 +201,7 @@ fmod TERMINAL is
    eq removeCard(C, terminal(S, TM, C)) = terminal(S, TM, nilCard) .
 
    --- waitingForPIN -> confirmation
-   ops requestTransaction : Terminal CardPIN -> Terminal .
+   op requestTransaction : Terminal CardPIN -> Terminal .
+   --- TODO: #1 requestTransaction
 
 endfm
