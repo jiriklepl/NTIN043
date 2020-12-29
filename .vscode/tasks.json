@@ -20,6 +20,24 @@
                 "clear": false
             },
             "problemMatcher": []
+        },
+        {
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/hw2-alloy"
+            },
+            "label": "alloy",
+            "type": "process",
+            "command": "make",
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
         }
     ]
 }
