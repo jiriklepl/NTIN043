@@ -75,7 +75,7 @@ fact { all a : Accessory, b : a.services | b.accessory = a }
 
 sig Characteristic {
     name : one Name,
-    value : lone CharacteristicValue, // TODO: why lone and not one?
+    value : lone CharacteristicValue,
     type : one CharacteristicType,
     service : one Service
 }
