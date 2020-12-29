@@ -31,7 +31,7 @@
             "command": "make",
             "presentation": {
                 "echo": false,
-                "reveal": "always",
+                "reveal": "silent",
                 "focus": true,
                 "panel": "shared",
                 "showReuseMessage": false,
