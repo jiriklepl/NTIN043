@@ -12,4 +12,5 @@ fact { all a : Home | (one b : a.accessories | b.category = AccessoryCategoryFan
 // ... and one alarm for the whole home
 fact { all a : Home | (one b : a.accessories | b.category = AccessoryCategoryAlarm) }
 
-run {} for 20 but exactly 1 Home, exactly 4 Room, exactly 20 Accessory
+run addAccessory for 20 but exactly 1 Home, exactly 4 Room, exactly 18 Accessory
+// run addRoom for 20 but exactly 1 Home, exactly 4 Room, exactly 18 Accessory
