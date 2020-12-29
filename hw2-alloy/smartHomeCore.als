@@ -14,10 +14,12 @@ sig Home {
 // Every home has a distinct name
 fact { all a : Home, b : Home | a.name = b.name => a = b }
 
-// Every service in a home is for an accessory in the same home
+// Every service in a home is for an accessory in the same home and vice versa
+fact { all a : Home, b : a.rooms, c : b.accessories, d : c.services | d in a.services }
 fact { all a : Home, b : a.services | b.accessory in a.accessories }
 
-// Every accessory in a home is in a room of the same home
+// Every accessory in a home is in a room of the same home and vice versa
+fact { all a : Home, b : a.rooms, c : b.accessories | c in a.accessories }
 fact { all a : Home, b : a.accessories | b.room in a.rooms }
 
 sig Room {
@@ -42,8 +44,13 @@ sig Accessory {
 
 sig AccessoryCategory {}
 
+// All accessories in a room have distinct names
 fact { all a : Accessory, b : Accessory | (a.name = b.name && a.room = b.room) => a = b }
 
+// All accessories in a home have distinct names
+fact { all h : Home, a : h.accessories, b : h.accessories | a.name = b.name => a = b }
+
+// The accessories in a room refer to it and it refers to them
 fact { all a : Accessory | a in a.room.accessories }
 fact { all a : Room, b : a.accessories | b.room = a }
 
@@ -56,8 +63,13 @@ sig Service {
 
 sig ServiceType {}
 
+// All servicesof an accessory have distinct names
 fact { all a : Service, b : Service | (a.name = b.name && a.accessory = b.accessory) => a = b }
 
+// All services in a home have distinct names
+fact { all h : Home, a : h.services, b : h.services | a.name = b.name => a = b }
+
+// All services of an accessory refer to it and it refers to them
 fact { all a : Service | a in a.accessory.services }
 fact { all a : Accessory, b : a.services | b.accessory = a }
 
@@ -68,8 +80,10 @@ sig Characteristic {
     service : one Service
 }
 
+// All characteristics of a service have distinct names
 fact { all a : Characteristic, b : Characteristic | (a.name = b.name && a.service = b.service) => a = b }
 
+// All characteristics of a service refer to it and it refers to them
 fact { all a : Characteristic | a in a.service.characteristics }
 fact { all a : Service, b : a.characteristics | b.service = a }
 
@@ -141,7 +155,7 @@ fact { all a : Service | a.type = ServiceTypeWindow => (#a.characteristics = 1) 
 
 fact { all a : Characteristic | a.type = CharacteristicTypeOpennes => (one a.value && a.value in CharacteristicValuePercentage) }
 
-// Alarm
+// Alarms
 one sig AccessoryCategoryAlarm extends AccessoryCategory {}
 one sig ServiceTypeAlarm extends ServiceType {}
 one sig CharacteristicTypeAlarmOff extends CharacteristicType {}
@@ -158,3 +172,17 @@ fact { all a : Characteristic | a.type = CharacteristicTypeAlarmOff => (one a.va
 fact { AccessoryCategory = AccessoryCategoryFan + AccessoryCategoryLightbulb + AccessoryCategoryOutlet + AccessoryCategoryWindow + AccessoryCategoryAlarm }
 fact { ServiceType = ServiceTypeFan + ServiceTypeLightbulb + ServiceTypeOutlet + ServiceTypeWindow + ServiceTypeAlarm }
 fact { CharacteristicType = CharacteristicTypeBrightness + CharacteristicTypeCurrentLightLevel + CharacteristicTypeOutletInUse + CharacteristicTypeRotationSpeed + CharacteristicTypeOpennes + CharacteristicTypeAlarmOff }
+
+pred addRoom [a : Home, b : Room] {
+    b.home = a
+    a.rooms = a.rooms + b
+    a.accessories = a.accessories + b.accessories
+    a.services = a.services + b.accessories.services
+}
+
+pred addAccessory [a : Home, b : Room, c : Accessory] {
+    c.room = b
+    b.accessories = b.accessories + c
+    a.accessories = a.accessories + c
+    a.services = a.services + c.services
+}
