@@ -14,3 +14,4 @@ Solutions to homework assignments for [NTIN043](https://d3s.mff.cuni.cz/teaching
   - [task](hw3-UML-and-OCL/UML_homework.pdf)
   - [diagram (PNG)](hw3-UML-and-OCL/movie.png)
   - [diagram (SVG)](hw3-UML-and-OCL/movie.svg)
+  - [Makefile](hw3-UML-and-OCL/Makefile)
