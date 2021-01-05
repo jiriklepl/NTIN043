@@ -38,6 +38,24 @@
                 "clear": false
             },
             "problemMatcher": []
+        },
+        {
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/hw3-UML-and-OCL"
+            },
+            "label": "UML & OCL",
+            "type": "shell",
+            "command": "make all",
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
         }
     ]
 }
