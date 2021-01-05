@@ -34,6 +34,10 @@ deadline: null
 
 ### Model
 
+![model](movie.png)
+
+### Decisions
+
 V tomto řešení jsou implementovány všechny zadané třídy a jejich intuitivní vztahy.
 
 U všech zadaných lidských entit bylo rozhodnuto, že budou derivovat třídu `Person`, která definuje jejich základní parametry, jejich vztahy se třídou `Movie` jsou potom přímé a pojmenované přesně podle daného vztahu mezi nimi.
